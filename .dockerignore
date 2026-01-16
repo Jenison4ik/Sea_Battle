@@ -1,0 +1,17 @@
+# Игнорируем node_modules (будут установлены в контейнере)
+frontend/node_modules
+frontend/dist
+
+# Игнорируем git
+.git
+.gitignore
+
+# Игнорируем документацию
+*.md
+README.md
+
+# Игнорируем другие файлы
+.vscode
+.idea
+*.log
+

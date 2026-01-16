@@ -194,10 +194,10 @@ void handleWebSocketMessage(crow::websocket::connection& conn, const std::string
                     currentSession->state = GameState::IN_GAME;
                     // Уведомляем обоих игроков
                     currentSession->player1.socket->send_text(
-                        JsonSerializer::error("Оба игрока готовы. Игра начинается!")
+                        JsonSerializer::bothPlayersReady()
                     );
                     currentSession->player2.socket->send_text(
-                        JsonSerializer::error("Оба игрока готовы. Игра начинается!")
+                        JsonSerializer::bothPlayersReady()
                     );
                 }
                 

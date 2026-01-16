@@ -30,6 +30,14 @@ public:
         return msg.dump();
     }
     
+    // Оба игрока готовы, игра начинается
+    static std::string bothPlayersReady() {
+        crow::json::wvalue msg;
+        msg["type"] = "BOTH_PLAYERS_READY";
+        msg["message"] = "Оба игрока готовы. Игра начинается!";
+        return msg.dump();
+    }
+    
     // Состояние после своего выстрела
     static std::string stateMyShot(const Board& board) {
         crow::json::wvalue msg;
@@ -39,6 +47,7 @@ public:
         crow::json::wvalue data;
         
         // Корабли противника - создаем массив через инициализацию
+        // НЕ отправляем координаты кораблей, чтобы не раскрывать их расположение
         std::vector<crow::json::wvalue> shipsList;
         shipsList.reserve(board.ships.size());
         for (const auto& ship : board.ships) {
@@ -84,15 +93,13 @@ public:
             
             crow::json::wvalue shipObj;
             
-            // Первая и последняя клетки корабля
-            auto firstCell = ship.cells[0];
-            auto lastCell = ship.cells[ship.cells.size() - 1];
-            
-            std::vector<int> firstCord = {firstCell.first, firstCell.second};
-            shipObj["first_cord"] = firstCord;
-            
-            std::vector<int> secCord = {lastCell.first, lastCell.second};
-            shipObj["sec_cord"] = secCord;
+            // Все координаты корабля - используем вектор векторов int
+            std::vector<std::vector<int>> cellsList;
+            cellsList.reserve(ship.cells.size());
+            for (const auto& cell : ship.cells) {
+                cellsList.push_back({cell.first, cell.second});
+            }
+            shipObj["cords"] = cellsList;
             
             // Подогретые клетки - используем вектор векторов int
             std::vector<std::vector<int>> heatedList;

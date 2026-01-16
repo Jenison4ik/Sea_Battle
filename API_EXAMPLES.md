@@ -145,8 +145,7 @@ ws1.send(
 //   "data": {
 //     "ships": [
 //       {
-//         "first_cord": [0,0],
-//         "sec_cord": [0,3],
+//         "cords": [[0,0], [0,1], [0,2], [0,3]],
 //         "heated_cords": [[0,0]],
 //         "isKilled": false
 //       }

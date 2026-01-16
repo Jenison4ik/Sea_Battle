@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { GameWebSocket } from "../service/GameWebSocket";
 
 export type AppState =
   | "loading"
@@ -19,7 +20,7 @@ export type AppState =
 export interface AppContextType {
   appState: AppState;
   setAppState: (state: AppState) => void;
-  socketRef: React.MutableRefObject<WebSocket | null>;
+  socketRef: React.MutableRefObject<GameWebSocket | null>;
   reconnect: () => void;
   reconnectTrigger: number;
 }
@@ -29,11 +30,11 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [appState, setAppState] = useState<AppState>("loading");
   const [reconnectTrigger, setReconnectTrigger] = useState(0);
-  const socketRef = useRef<WebSocket | null>(null);
+  const socketRef = useRef<GameWebSocket | null>(null);
 
   const reconnect = () => {
     if (socketRef.current) {
-      socketRef.current.close();
+      socketRef.current.disconnect();
     }
     setAppState("loading");
     // Триггерим переподключение через изменение состояния

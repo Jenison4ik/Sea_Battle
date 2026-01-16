@@ -6,6 +6,8 @@ import ErrorPage from "./pages/ErrorPage";
 import "./App.css";
 import CreateGame from "./pages/CreateGame";
 import JoinGame from "./pages/JoinGame";
+import BuildShip from "./pages/BuildShip";
+import { GameWebSocket } from "./service/GameWebSocket";
 
 function AppContent() {
   const { appState, setAppState, socketRef, reconnectTrigger } = useApp();
@@ -13,7 +15,7 @@ function AppContent() {
   useEffect(() => {
     // Закрываем предыдущее соединение если оно есть
     if (socketRef.current) {
-      socketRef.current.close();
+      socketRef.current.disconnect();
       socketRef.current = null;
     }
 
@@ -21,39 +23,51 @@ function AppContent() {
     setAppState("loading");
 
     // Создаем новое WebSocket соединение
-    const socket = new WebSocket("/ws");
-    socketRef.current = socket;
+    const gameSocket = new GameWebSocket("/ws");
+    socketRef.current = gameSocket;
 
     let isMounted = true;
 
-    socket.onopen = () => {
+    // Подписываемся на события
+    const unsubscribeOpen = gameSocket.onOpen(() => {
       console.log("WebSocket connected");
       if (isMounted) {
         setAppState("main");
       }
-    };
+    });
 
-    socket.onerror = (error) => {
+    const unsubscribeError = gameSocket.onError((error) => {
       console.error("WebSocket error:", error);
       if (isMounted) {
         setAppState("error");
       }
-    };
+    });
 
-    socket.onclose = (event) => {
+    const unsubscribeClose = gameSocket.onClose((event) => {
       console.log("WebSocket closed", event.code, event.reason);
       // Если соединение закрылось неожиданно (код не 1000 - нормальное закрытие), показываем ошибку
       if (isMounted && event.code !== 1000) {
         setAppState("error");
       }
       socketRef.current = null;
-    };
+    });
+
+    // Подключаемся к серверу
+    gameSocket.connect().catch((error) => {
+      console.error("Failed to connect:", error);
+      if (isMounted) {
+        setAppState("error");
+      }
+    });
 
     // Очистка при размонтировании
     return () => {
       isMounted = false;
+      unsubscribeOpen();
+      unsubscribeError();
+      unsubscribeClose();
       if (socketRef.current) {
-        socketRef.current.close();
+        socketRef.current.disconnect();
         socketRef.current = null;
       }
     };
@@ -74,14 +88,21 @@ function AppContent() {
       }
       return (
         <CreateGame
-          socketRef={socketRef as React.MutableRefObject<WebSocket>}
+          socketRef={socketRef as React.MutableRefObject<GameWebSocket>}
         />
       );
     case "search":
       return (
-        <JoinGame socketRef={socketRef as React.MutableRefObject<WebSocket>} />
+        <JoinGame
+          socketRef={socketRef as React.MutableRefObject<GameWebSocket>}
+        />
       );
     case "build":
+      // Гарантируем, что socketRef.current не null перед рендерингом BuildShip
+      if (!socketRef.current) {
+        return <LoadingPage />;
+      }
+      return <BuildShip />;
     case "ingame":
     case "endgame":
       return <Main />;

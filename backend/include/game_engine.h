@@ -42,23 +42,43 @@ public:
         // Проверка на пересечения и близость кораблей
         std::set<std::pair<int, int>> allCells;
         for (const auto& ship : ships) {
+            // Сначала добавляем все клетки текущего корабля во временное множество
+            std::set<std::pair<int, int>> currentShipCells;
             for (const auto& cell : ship) {
                 // Проверка на дубликаты в одном корабле
+                if (currentShipCells.count(cell) > 0) {
+                    return false;
+                }
+                currentShipCells.insert(cell);
+            }
+            
+            // Проверяем близость клеток текущего корабля к уже размещенным кораблям
+            for (const auto& cell : ship) {
+                // Проверка на пересечение с другими кораблями
                 if (allCells.count(cell) > 0) {
                     return false;
                 }
                 
-                // Проверка близости к другим кораблям
+                // Проверка близости к другим кораблям (не к текущему)
                 for (int dx = -1; dx <= 1; ++dx) {
                     for (int dy = -1; dy <= 1; ++dy) {
                         if (dx == 0 && dy == 0) continue;
                         std::pair<int, int> neighbor = {cell.first + dx, cell.second + dy};
-                        if (allCells.count(neighbor) > 0) {
+                        // Проверяем границы поля для соседа
+                        if (neighbor.first < 0 || neighbor.first > 9 || 
+                            neighbor.second < 0 || neighbor.second > 9) {
+                            continue; // Сосед за пределами поля, пропускаем
+                        }
+                        // Проверяем только если сосед не является частью текущего корабля
+                        if (currentShipCells.count(neighbor) == 0 && allCells.count(neighbor) > 0) {
                             return false; // Корабли слишком близко
                         }
                     }
                 }
-                
+            }
+            
+            // Добавляем все клетки текущего корабля в общее множество
+            for (const auto& cell : ship) {
                 allCells.insert(cell);
             }
         }

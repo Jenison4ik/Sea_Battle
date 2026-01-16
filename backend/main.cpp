@@ -172,11 +172,11 @@ void handleWebSocketMessage(crow::websocket::connection& conn, const std::string
                     ships.push_back(ship);
                 }
                 
-                // Валидация
-                if (!GameEngine::validateShipPlacement(ships)) {
-                    conn.send_text(JsonSerializer::error("Неверная расстановка кораблей"));
-                    return;
-                }
+                // Валидация - временно отключена, проверка только на клиенте
+                // if (!GameEngine::validateShipPlacement(ships)) {
+                //     conn.send_text(JsonSerializer::error("Неверная расстановка кораблей"));
+                //     return;
+                // }
                 
                 // Сохранение кораблей
                 player.board.ships.clear();

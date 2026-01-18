@@ -51,6 +51,7 @@ export default function BuildShip() {
         setMyShips(ships);
         setAppState("ingame");
       } else if (isErrorMessage(message)) {
+        setAppState('main')
         console.error("Server error:", message.message);
         alert(`Ошибка: ${message.message}`);
         setIsPlacing(false);

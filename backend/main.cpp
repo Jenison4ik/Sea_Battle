@@ -225,8 +225,8 @@ void handleWebSocketMessage(crow::websocket::connection& conn, const std::string
                     return;
                 }
                 
-                Player& currentPlayer = currentSession->getCurrentPlayer();
-                if (currentPlayer.socket != &conn) {
+                Player& shooter = currentSession->getCurrentPlayer();
+                if (shooter.socket != &conn) {
                     conn.send_text(JsonSerializer::error("Не ваш ход"));
                     return;
                 }
@@ -239,31 +239,35 @@ void handleWebSocketMessage(crow::websocket::connection& conn, const std::string
                 int x = json["x"].i();
                 int y = json["y"].i();
                 
-                // Обработка выстрела
+                // ВАЖНО: Сохраняем ссылки на игроков ДО вызова processShot,
+                // потому что processShot может переключить ход при промахе
+                Player& target = currentSession->getOpponent();
+                
+                // Обработка выстрела (может переключить ход при промахе)
                 ShotResult result = GameEngine::processShot(*currentSession, x, y);
                 
-                Player& opponent = currentSession->getOpponent();
-                
-                // Отправка состояния текущему игроку (MY_SHOT) - состояние поля противника
+                // Отправка состояния стреляющему игроку (MY_SHOT) - состояние поля ЦЕЛИ
                 // Показывает стреляющему куда он попал по полю противника
-                conn.send_text(JsonSerializer::stateMyShot(opponent.board));
+                conn.send_text(JsonSerializer::stateMyShot(target.board));
                 
-                // Отправка состояния противнику (ENEMY_SHOT) - состояние его собственного поля
-                // Показывает противнику куда по нему попали (его собственное поле с выстрелами)
-                if (opponent.socket) {
-                    opponent.socket->send_text(JsonSerializer::stateEnemyShot(opponent.board));
+                // Отправка состояния цели (ENEMY_SHOT) - состояние её собственного поля
+                // Показывает цели куда по ней попали
+                if (target.socket) {
+                    target.socket->send_text(JsonSerializer::stateEnemyShot(target.board));
                 }
                 
                 // Проверка победы
                 if (result == ShotResult::WIN) {
-                    std::string winner = (currentSession->currentTurn == 1) ? "player1" : "player2";
+                    // При победе текущий игрок (shooter) - победитель
+                    std::string winner = isPlayer1 ? "player1" : "player2";
                     
+                    // Отправляем каждому игроку его собственную статистику
                     currentSession->player1.socket->send_text(
-                        JsonSerializer::gameOver(winner, currentPlayer.stats)
+                        JsonSerializer::gameOver(winner, currentSession->player1.stats)
                     );
                     if (currentSession->player2.socket) {
                         currentSession->player2.socket->send_text(
-                            JsonSerializer::gameOver(winner, currentPlayer.stats)
+                            JsonSerializer::gameOver(winner, currentSession->player2.stats)
                         );
                     }
                 } else {

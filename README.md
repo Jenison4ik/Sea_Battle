@@ -469,21 +469,9 @@ docker-compose logs -f
 docker-compose logs | grep -i error
 ```
 
-### Тестирование WebSocket
-
-Используйте инструменты вроде:
-- [WebSocket King](https://websocketking.com/)
-- [Postman](https://www.postman.com/) (с поддержкой WebSocket)
-- Или встроенный тестовый файл `test_game_session.html`
-
 ## 📝 Лицензия
 
 MIT License
 
-## 🤝 Вклад в проект
-
-Приветствуются любые улучшения! Создавайте issues и pull requests.
-
----
 
 **Приятной игры! 🎯⚓**

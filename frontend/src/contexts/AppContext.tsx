@@ -33,6 +33,8 @@ export interface AppContextType {
   setFirstTurn: (turn: string | null) => void;
   myShips: Ship[];
   setMyShips: (ships: Ship[]) => void;
+  roomCode: string | null;
+  setRoomCode: (code: string | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -43,6 +45,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [firstTurn, setFirstTurn] = useState<string | null>(null);
   const [myShips, setMyShips] = useState<Ship[]>([]);
+  const [roomCode, setRoomCode] = useState<string | null>(null);
   const socketRef = useRef<GameWebSocket | null>(null);
 
   // Используем useCallback для стабильной функции reconnect
@@ -54,6 +57,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPlayerId(null);
     setFirstTurn(null);
     setMyShips([]);
+    setRoomCode(null);
     // Триггерим переподключение через изменение состояния
     setReconnectTrigger((prev) => prev + 1);
   }, []);
@@ -72,6 +76,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setFirstTurn,
       myShips,
       setMyShips,
+      roomCode,
+      setRoomCode,
     }),
     [
       appState,
@@ -80,7 +86,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       playerId,
       firstTurn,
       myShips,
-      // setAppState, setPlayerId, setFirstTurn, setMyShips - стабильные функции от useState
+      roomCode,
+      // setAppState, setPlayerId, setFirstTurn, setMyShips, setRoomCode - стабильные функции от useState
       // socketRef - стабильная ссылка от useRef
     ]
   );

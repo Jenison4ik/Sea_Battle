@@ -21,8 +21,11 @@ export class GameWebSocket {
    */
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      console.log("[GameWebSocket] connect() called, current state:", this.socket?.readyState);
-      
+      console.log(
+        "[GameWebSocket] connect() called, current state:",
+        this.socket?.readyState
+      );
+
       if (this.socket?.readyState === WebSocket.OPEN) {
         console.log("[GameWebSocket] Already connected");
         resolve();
@@ -65,7 +68,12 @@ export class GameWebSocket {
         };
 
         this.socket.onclose = (event) => {
-          console.log("[GameWebSocket] onclose fired: code=", event.code, "reason=", event.reason);
+          console.log(
+            "[GameWebSocket] onclose fired: code=",
+            event.code,
+            "reason=",
+            event.reason
+          );
           this.isConnecting = false;
           this.notifyCloseHandlers(event);
         };
@@ -86,7 +94,12 @@ export class GameWebSocket {
    * Отключение от WebSocket сервера
    */
   disconnect(code?: number, reason?: string): void {
-    console.log("[GameWebSocket] disconnect() called, code=", code, "reason=", reason);
+    console.log(
+      "[GameWebSocket] disconnect() called, code=",
+      code,
+      "reason=",
+      reason
+    );
     console.trace("[GameWebSocket] disconnect stack trace:");
     if (this.socket) {
       this.socket.close(code, reason);

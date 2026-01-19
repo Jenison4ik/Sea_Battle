@@ -9,6 +9,7 @@ import JoinGame from "./pages/JoinGame";
 import BuildShip from "./pages/BuildShip";
 import GamePage from "./pages/GamePage";
 import { GameWebSocket } from "./service/GameWebSocket";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 function AppContent() {
   const { appState, setAppState, socketRef, reconnectTrigger, reconnect } =
@@ -18,6 +19,8 @@ function AppContent() {
   const setAppStateRef = useRef(setAppState);
   const appStateRef = useRef(appState);
   const reconnectRef = useRef(reconnect);
+  // Отслеживаем предыдущее значение reconnectTrigger для определения намеренного переподключения
+  const prevReconnectTriggerRef = useRef(reconnectTrigger);
 
   useEffect(() => {
     setAppStateRef.current = setAppState;
@@ -66,13 +69,29 @@ function AppContent() {
   );
 
   useEffect(() => {
-    console.log("[App] useEffect running, reconnectTrigger=", reconnectTrigger);
-    
-    // Закрываем предыдущее соединение если оно есть
-    if (socketRef.current) {
-      console.log("[App] Closing previous connection");
+    const isIntentionalReconnect =
+      reconnectTrigger !== prevReconnectTriggerRef.current;
+    console.log(
+      "[App] useEffect running, reconnectTrigger=",
+      reconnectTrigger,
+      "intentional=",
+      isIntentionalReconnect
+    );
+
+    // Обновляем предыдущее значение
+    prevReconnectTriggerRef.current = reconnectTrigger;
+
+    // Закрываем предыдущее соединение только если это намеренное переподключение
+    if (socketRef.current && isIntentionalReconnect) {
+      console.log("[App] Closing previous connection (intentional reconnect)");
       socketRef.current.disconnect();
       socketRef.current = null;
+    }
+
+    // Если соединение уже есть и открыто, не создаём новое
+    if (socketRef.current?.isConnected) {
+      console.log("[App] Connection already exists and is open, skipping");
+      return;
     }
 
     // Устанавливаем состояние загрузки
@@ -111,11 +130,9 @@ function AppContent() {
       unsubscribeOpen();
       unsubscribeError();
       unsubscribeClose();
-      if (socketRef.current) {
-        console.log("[App] Disconnecting in cleanup");
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
+      // НЕ закрываем соединение здесь - оно закрывается в начале следующего useEffect
+      // при намеренном переподключении. Это предотвращает закрытие при ошибках
+      // рендеринга вызванных браузерными расширениями
     };
   }, [reconnectTrigger, socketRef, handleOpen, handleError, handleClose]); // Переподключение происходит при изменении reconnectTrigger
 
@@ -133,9 +150,11 @@ function AppContent() {
         return <LoadingPage />;
       }
       return (
-        <CreateGame
-          socketRef={socketRef as React.MutableRefObject<GameWebSocket>}
-        />
+        <ErrorBoundary>
+          <CreateGame
+            socketRef={socketRef as React.MutableRefObject<GameWebSocket>}
+          />
+        </ErrorBoundary>
       );
     case "search":
       // Гарантируем, что socketRef.current не null перед рендерингом JoinGame

@@ -2,6 +2,10 @@
   --blur-color: #5351cd91;
 }
 
+.container {
+  display: contents;
+}
+
 .load-box {
   display: flex;
   gap: 10px;

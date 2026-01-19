@@ -16,25 +16,29 @@ export default function CreateGame({
 }: {
   socketRef: React.MutableRefObject<GameWebSocket>;
 }) {
-  const [session, setSession] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
-  const { setAppState, setPlayerId, setFirstTurn } = useApp();
+  const { setAppState, setPlayerId, setFirstTurn, roomCode, setRoomCode } =
+    useApp();
 
   // Используем useRef для хранения актуальных значений функций контекста
   const appStateRef = useRef(setAppState);
   const playerIdRef = useRef(setPlayerId);
   const firstTurnRef = useRef(setFirstTurn);
+  const setRoomCodeRef = useRef(setRoomCode);
+  // Флаг чтобы не отправлять CREATE_SESSION повторно при перемонтировании
+  const sessionCreatedRef = useRef(roomCode !== null);
 
   // Обновляем ref'ы при изменении функций
   useEffect(() => {
     appStateRef.current = setAppState;
     playerIdRef.current = setPlayerId;
     firstTurnRef.current = setFirstTurn;
-  }, [setAppState, setPlayerId, setFirstTurn]);
+    setRoomCodeRef.current = setRoomCode;
+  }, [setAppState, setPlayerId, setFirstTurn, setRoomCode]);
 
   function copy(e: React.MouseEvent) {
-    navigator.clipboard.writeText(session || "");
+    navigator.clipboard.writeText(roomCode || "");
     setCursorPos({ x: e.clientX, y: e.clientY });
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 4000);
@@ -57,7 +61,8 @@ export default function CreateGame({
 
     // Используем type guards для безопасной проверки типов
     if (isSessionCreatedMessage(message)) {
-      setSession(message.roomCode);
+      setRoomCodeRef.current(message.roomCode);
+      sessionCreatedRef.current = true;
       // При создании сессии мы player1
       playerIdRef.current("player1");
     } else if (isErrorMessage(message)) {
@@ -69,7 +74,15 @@ export default function CreateGame({
     // socketRef.current гарантированно не null на этом этапе
     const gameSocket = socketRef.current;
 
-    gameSocket.send({ type: "CREATE_SESSION" });
+    // Отправляем CREATE_SESSION только если сессия ещё не создана
+    if (!sessionCreatedRef.current) {
+      console.log("[CreateGame] Sending CREATE_SESSION");
+      gameSocket.send({ type: "CREATE_SESSION" });
+    } else {
+      console.log(
+        "[CreateGame] Session already exists, skipping CREATE_SESSION"
+      );
+    }
 
     // Подписываемся на сообщения через observer pattern
     const unsubscribe = gameSocket.onMessage(handleMessage);
@@ -81,10 +94,10 @@ export default function CreateGame({
   }, [socketRef, handleMessage]);
 
   return (
-    <>
+    <div className={styles.container}>
       <h3>Код сессии</h3>
       <div onClick={copy} className={styles.sessionWrap}>
-        <p className={styles.session}>{session}</p>
+        <p className={styles.session}>{roomCode}</p>
         <Copy size={16} color="black" />
       </div>
       <div className={styles["load-box"]}>
@@ -101,6 +114,6 @@ export default function CreateGame({
           <p>Copied</p>
         </CursorDiv>
       )}
-    </>
+    </div>
   );
 }
